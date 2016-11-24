@@ -58,16 +58,19 @@ CLEAR_AT = process.env.HUBOT_LUNCHBOT_CLEAR_AT || '0 0 0 * * *' # midnight
 CronJob = require("cron").CronJob
 
 module.exports = (robot) ->
-  
+
+  # Make sure the lunch dictionary exists
+  robot.brain.data.lunch = robot.brain.data.lunch || {}
+
   ##
   # Define the lunch functions
   lunch =
     get: ->
       Object.keys(robot.brain.data.lunch)
-    
+
     add: (user, item) ->
       robot.brain.data.lunch[user] = item
-      
+
     remove: (user) ->
       delete robot.brain.data.lunch[user]
 
@@ -80,14 +83,14 @@ module.exports = (robot) ->
 
   ##
   # Define things to be scheduled
-  schedule =    
+  schedule =
     notify: (time) ->
       new CronJob(time, ->
         lunch.notify()
         return
       , null, true, TIMEZONE)
-    
-    clear: (time) -> 
+
+    clear: (time) ->
       new CronJob(time, ->
         robot.brain.data.lunch = {}
         return
@@ -100,13 +103,13 @@ module.exports = (robot) ->
   ##
   # Schedule when the order should be cleared at
   schedule.clear CLEAR_AT
-  
+
   ##
   # List out all the orders
   robot.respond /lunch orders$/i, (msg) ->
     orders = lunch.get().map (user) -> "#{user}: #{robot.brain.data.lunch[user]}"
     msg.send orders.join("\n") || "No items in the lunch list."
-  
+
   ##
   # Save what a person wants to the lunch order
   robot.respond /i want (.*)/i, (msg) ->
@@ -124,7 +127,7 @@ module.exports = (robot) ->
   # Cancel the entire order and remove all the items
   robot.respond /cancel all orders/i, (msg) ->
     delete robot.brain.data.lunch
-    lunch.clear()  
+    lunch.clear()
 
   ##
   # Help decided who should either order, pick up or get
